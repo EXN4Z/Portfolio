@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 
-import nodemailer from "nodemailer";
+import * as nodemailer from "nodemailer";
 
 function escapeHtml(input: string) {
   return input
