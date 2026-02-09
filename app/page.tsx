@@ -479,13 +479,13 @@ export default function Page() {
             <StaggerWrap show={true} index={1} className="md:col-span-5">
               <Card className="overflow-hidden p-0">
                 <div className="relative h-[340px] w-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/10 dark:to-white/5">
-                  <Image src="/images/Foto.png" alt="Profile" fill className="" priority />
+                  <Image src="/images/foto.png" alt="Profile" fill className="max-w-60 mx-auto" priority />
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(0,0,0,0.25),transparent_55%)]" />
                   <div
                     className="absolute bottom-5 left-5 rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-xs text-zinc-100 backdrop-blur
                                dark:border-white/10 dark:bg-white/10 dark:text-zinc-100"
                   >
-                    <p className="font-semibold">Available</p>
+                    <p className="font-semibold">Availab le</p>
                     <p>{profile.status}</p>
                   </div>
                 </div>
