@@ -39,9 +39,9 @@ const profile = {
   email: "ajafebri807@gmail.com",
   whatsapp: "+6282128637082",
   github: "github.com/ExN4Z",
-  instagram: "instagram.com/pebrian.deh", // ganti sesuai IG kamu
+  instagram: "instagram.com/pebrian.deh",
   heroKicker: "JUNIOR DEVELOPER",
-  heroTitle: "Build real web apps",
+  heroTitle: "Build web apps with responsive UI and backend",
   heroDesc:
     "Saya membangun aplikasi web end-to-end untuk kebutuhan nyata: UI rapi, API sederhana tapi clean, database terstruktur, dan deploy siap dipakai.",
   focusChips: ["Next.js", "Supabase", "PostgreSQL", "Tailwind CSS"],
@@ -143,7 +143,8 @@ function getIcon(label: string): React.ReactNode | null {
 
   if (l.includes("instagram")) return <SiInstagram className={cls("text-[#E1306C]")} />;
 
-  if (l.includes("email") || l.includes("gmail") || l.includes("mail")) return <MdEmail className={cls("text-[#EA4335]")} />;
+  if (l.includes("email") || l.includes("gmail") || l.includes("mail"))
+    return <MdEmail className={cls("text-[#EA4335]")} />;
 
   return null;
 }
@@ -152,14 +153,11 @@ function Card({ children, className }: { children: React.ReactNode; className?: 
   return (
     <div
       className={cn(
-        "rounded-2xl border shadow-[0_10px_35px_rgba(0,0,0,0.08)] transition-all duration-300 backdrop-blur",
-
+        "rounded-2xl border shadow-[0_10px_35px_rgba(0,0,0,0.08)] transition-all duration-300 backdrop-blur will-change-transform",
         "border-black/10 bg-gradient-to-b from-white via-white to-zinc-50/70",
-
         "dark:border-white/10 dark:bg-gradient-to-b dark:from-zinc-900/70 dark:via-zinc-900/35 dark:to-zinc-950/70",
         "dark:shadow-[0_18px_55px_rgba(0,0,0,0.45)]",
-
-        "hover:-translate-y-[1px] hover:shadow-[0_18px_55px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_22px_70px_rgba(0,0,0,0.55)]",
+        "hover:-translate-y-[2px] hover:shadow-[0_18px_55px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_22px_70px_rgba(0,0,0,0.55)]",
         className
       )}
     >
@@ -236,44 +234,153 @@ function SectionTitle({
   );
 }
 
-export default function Page() {  
-const [sending, setSending] = React.useState(false);
-const [status, setStatus] = React.useState<null | "success" | "error">(null);
+function useInView(options?: IntersectionObserverInit) {
+  const ref = React.useRef<HTMLElement | null>(null);
+  const [inView, setInView] = React.useState(false);
 
-async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
-  setSending(true);
-  setStatus(null);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
 
-  const form = e.currentTarget;
-  const formData = new FormData(form);
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        setInView(entry.isIntersecting);
+      },
+      { threshold: 0.2, rootMargin: "0px 0px -30% 0px", ...options }
+    );
 
-  const payload = {
-    name: formData.get("name"),
-    email: formData.get("email"),
-    message: formData.get("message"),
-  };
+    io.observe(el);
+    return () => io.disconnect();
+  }, [options?.root, options?.rootMargin, options?.threshold]);
 
-  try {
-    const res = await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) throw new Error("Failed");
-
-    form.reset();
-    setStatus("success");
-  } catch {
-    setStatus("error");
-  } finally {
-    setSending(false);
-  }
+  return { ref, inView };
 }
-  return (
-    <main id="home" className="relative min-h-screen text-black transition-colors duration-300 dark:text-zinc-100">
 
+function RevealSection({
+  id,
+  className,
+  children,
+  onActive,
+}: {
+  id: string;
+  className?: string;
+  children: React.ReactNode;
+  onActive?: (href: string) => void;
+}) {
+  const { ref, inView } = useInView({ threshold: 0.25, rootMargin: "0px 0px -35% 0px" });
+  const [shown, setShown] = React.useState(false);
+
+  React.useEffect(() => {
+    if (inView) {
+      setShown(true);
+      onActive?.(`#${id}`);
+    }
+  }, [inView, id, onActive]);
+
+  return (
+    <section
+      id={id}
+      ref={(node) => {
+        ref.current = node as HTMLElement | null;
+      }}
+      className={cn(
+        "scroll-mt-24",
+        "motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out will-change-transform",
+        shown ? "translate-y-0 opacity-100" : "motion-safe:translate-y-10 motion-safe:opacity-0",
+        className
+      )}
+    >
+      {children}
+    </section>
+  );
+}
+
+function StaggerWrap({
+  show,
+  index,
+  children,
+  className,
+  step = 90,
+}: {
+  show: boolean;
+  index: number;
+  children: React.ReactNode;
+  className?: string;
+  step?: number;
+}) {
+  return (
+    <div
+      className={cn(
+        "motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out will-change-transform",
+        show ? "translate-y-0 opacity-100" : "motion-safe:translate-y-8 motion-safe:opacity-0",
+        className
+      )}
+      style={{
+        transitionDelay: `${Math.min(index * step, 700)}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export default function Page() {
+  const [sending, setSending] = React.useState(false);
+  const [status, setStatus] = React.useState<null | "success" | "error">(null);
+
+  const [active, setActive] = React.useState<string>("#home");
+  const handleActive = React.useCallback((href: string) => {
+    setActive(href);
+  }, []);
+
+  function handleNavClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
+    e.preventDefault();
+    setActive(href);
+    const el = document.querySelector(href);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    window.history.replaceState(null, "", href);
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSending(true);
+    setStatus(null);
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const payload = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      message: formData.get("message"),
+    };
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      form.reset();
+      setStatus("success");
+    } catch {
+      setStatus("error");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const projectsGrid = useInView({ threshold: 0.2, rootMargin: "0px 0px -25% 0px" });
+  const skillsGrid = useInView({ threshold: 0.2, rootMargin: "0px 0px -25% 0px" });
+  const expGrid = useInView({ threshold: 0.2, rootMargin: "0px 0px -25% 0px" });
+  const contactGrid = useInView({ threshold: 0.2, rootMargin: "0px 0px -25% 0px" });
+
+  return (
+    <main className="relative min-h-screen text-black transition-colors duration-300 dark:text-zinc-100">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-950 dark:to-black" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.35),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.10),transparent_60%)]" />
@@ -293,16 +400,35 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
             </div>
 
             <nav className="hidden md:flex ml-80 gap-6 text-sm text-black/70 dark:text-zinc-300">
-              {nav.map((n) => (
-                <a key={n.href} href={n.href} className="hover:text-black dark:hover:text-white">
-                  {n.label}
-                </a>
-              ))}
+              {nav.map((n) => {
+                const isActive = active === n.href;
+                return (
+                  <a
+                    key={n.href}
+                    href={n.href}
+                    onClick={(e) => handleNavClick(e, n.href)}
+                    className={cn(
+                      "relative hover:text-black dark:hover:text-white transition-colors",
+                      isActive && "text-black dark:text-white font-semibold"
+                    )}
+                  >
+                    {n.label}
+                    <span
+                      className={cn(
+                        "absolute -bottom-2 left-0 h-[2px] w-full rounded-full transition-opacity",
+                        "bg-black/80 dark:bg-white/80",
+                        isActive ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </a>
+                );
+              })}
             </nav>
 
             <div className="flex items-center gap-2">
               <a
                 href="#contact"
+                onClick={(e) => handleNavClick(e, "#contact")}
                 className="rounded-xl border px-4 py-2 text-sm font-semibold transition-colors
                            border-black/15 bg-gradient-to-b from-white to-zinc-100 text-black hover:from-black hover:to-black hover:text-white
                            dark:border-white/15 dark:bg-gradient-to-b dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100
@@ -315,62 +441,61 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         </Container>
       </header>
 
-      <section className="py-10">
+      <RevealSection id="home" onActive={handleActive} className="py-10">
         <Container>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
-            <Card className="md:col-span-7 p-8">
-              <p className="text-xs font-semibold text-black/50 dark:text-zinc-400">{profile.heroKicker}</p>
-              <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-tight whitespace-pre-line">
-                {profile.heroTitle}
-              </h1>
-              <p className="mt-4 max-w-xl text-sm leading-6 text-black/60 dark:text-zinc-300">{profile.heroDesc}</p>
+            <StaggerWrap show={true} index={0} className="md:col-span-7">
+              <Card className="p-8">
+                <p className="text-xs font-semibold text-black/50 dark:text-zinc-400">{profile.heroKicker}</p>
+                <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-tight whitespace-pre-line">
+                  {profile.heroTitle}
+                </h1>
+                <p className="mt-4 max-w-xl text-sm leading-6 text-black/60 dark:text-zinc-300">{profile.heroDesc}</p>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <a
-                  href="#projects"
-                  className="rounded-xl px-5 py-3 text-sm font-semibold transition-opacity
-                             bg-gradient-to-b from-black to-zinc-800 text-white hover:opacity-90
-                             dark:from-white dark:to-zinc-200 dark:text-black"
-                >
-                  View Projects
-                </a>
-                <a
-                  href="#skills"
-                  className="rounded-xl border px-5 py-3 text-sm font-semibold transition-colors
-                             border-black/15 bg-gradient-to-b from-white to-zinc-100 text-black hover:from-black hover:to-black hover:text-white
-                             dark:border-white/15 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100
-                             dark:hover:from-white dark:hover:to-white dark:hover:text-black"
-                >
-                  Tech Stack
-                </a>
-
-                {profile.focusChips.map((c) => (
-                  <Chip key={c} icon={getIcon(c)}>
-                    {c}
-                  </Chip>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="md:col-span-5 overflow-hidden p-0">
-              <div className="relative h-[340px] w-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/10 dark:to-white/5">
-                {/* ✅ ganti ke foto kamu */}
-                <Image src="/images/image.png" alt="Profile" fill className="object-cover" priority />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(0,0,0,0.25),transparent_55%)]" />
-                <div
-                  className="absolute bottom-5 left-5 rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-xs text-zinc-100 backdrop-blur
-                             dark:border-white/10 dark:bg-white/10 dark:text-zinc-100"
-                >
-                  <p className="font-semibold">Available</p>
-                  <p>{profile.status}</p>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <a
+                    href="#projects"
+                    onClick={(e) => handleNavClick(e, "#projects")}
+                    className="rounded-xl px-5 py-3 text-sm font-semibold transition-opacity
+                               bg-gradient-to-b from-black to-zinc-800 text-white hover:opacity-90
+                               dark:from-white dark:to-zinc-200 dark:text-black"
+                  >
+                    View Projects
+                  </a>
+                  <a
+                    href="#skills"
+                    onClick={(e) => handleNavClick(e, "#skills")}
+                    className="rounded-xl border px-5 py-3 text-sm font-semibold transition-colors
+                               border-black/15 bg-gradient-to-b from-white to-zinc-100 text-black hover:from-black hover:to-black hover:text-white
+                               dark:border-white/15 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100
+                               dark:hover:from-white dark:hover:to-white dark:hover:text-black"
+                  >
+                    Tech Stack
+                  </a>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </StaggerWrap>
+
+            <StaggerWrap show={true} index={1} className="md:col-span-5">
+              <Card className="overflow-hidden p-0">
+                <div className="relative h-[340px] w-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/10 dark:to-white/5">
+                  <Image src="/images/image.png" alt="Profile" fill className="object-cover" priority />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(0,0,0,0.25),transparent_55%)]" />
+                  <div
+                    className="absolute bottom-5 left-5 rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-xs text-zinc-100 backdrop-blur
+                               dark:border-white/10 dark:bg-white/10 dark:text-zinc-100"
+                  >
+                    <p className="font-semibold">Available</p>
+                    <p>{profile.status}</p>
+                  </div>
+                </div>
+              </Card>
+            </StaggerWrap>
           </div>
         </Container>
-      </section>
+      </RevealSection>
 
-      <section id="about" className="py-10">
+      <RevealSection id="about" onActive={handleActive} className="py-10">
         <Container>
           <Card className="p-8">
             <SectionTitle
@@ -382,27 +507,29 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
               <div className="md:col-span-8 space-y-4 text-sm leading-6 text-black/70 dark:text-zinc-200">
                 <p>
-                  Halo! Saya <span className="font-semibold text-black dark:text-white">{profile.name}</span>,{" "}
-                  siswa SMK (kelas 2) yang lagi fokus belajar fullstack web development. Saya suka bikin aplikasi yang
-                  beneran jalan: UI rapi, data nyambung ke database, dan fitur penting bisa dipakai.
+                  Halo! Saya <span className="font-semibold text-black dark:text-white">{profile.name}</span>, siswa SMK
+                  (kelas 2) yang lagi fokus belajar fullstack web development. Saya suka bikin aplikasi yang beneran
+                  jalan: UI rapi, data nyambung ke database, dan fitur penting bisa dipakai.
                 </p>
 
                 <p>
                   Saat ini saya nyaman pakai{" "}
                   <span className="font-semibold text-black dark:text-white">Next.js + Tailwind</span> untuk frontend,
-                  dan <span className="font-semibold text-black dark:text-white">Supabase (PostgreSQL)</span> untuk backend/database.
-                  Saya belum pro, tapi saya terbiasa baca dokumentasi, nyoba sampai jalan, dan fixing bug sampai beres.
+                  dan <span className="font-semibold text-black dark:text-white">Supabase (PostgreSQL)</span> untuk
+                  backend/database. Saya belum pro, tapi saya terbiasa baca dokumentasi, nyoba sampai jalan, dan fixing
+                  bug sampai beres.
                 </p>
 
                 <p>
-                  Project yang pernah saya buat contohnya: aplikasi baca komik (komik → chapter → pages) dengan upload gambar
-                  ke storage, dan mini e-commerce sederhana (list produk, auth basic, dan CRUD admin).
-                  Dari situ saya belajar struktur data, relasi tabel, dan bikin UI yang tetap enak dipakai.
+                  Project yang pernah saya buat contohnya: aplikasi baca komik (komik → chapter → pages) dengan upload
+                  gambar ke storage, dan auth basic, dan CRUD admin. Dari situ saya belajar struktur data, relasi tabel,
+                  dan bikin UI yang tetap enak dipakai.
                 </p>
 
                 <p>
-                  Untuk magang, saya pengen ikut ngerjain task nyata: benerin bug, bikin page/komponen, nyambungin form ke database,
-                  atau bantu nambah fitur yang sudah ada. Saya siap menerima arahan, catat feedback, dan improve dari revisi.
+                  Untuk magang, saya pengen ikut ngerjain task nyata: benerin bug, bikin page/komponen, nyambungin form
+                  ke database, atau bantu nambah fitur yang sudah ada. Saya siap menerima arahan, catat feedback, dan
+                  improve dari revisi.
                 </p>
               </div>
 
@@ -433,74 +560,85 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
                     <li>• Deploy & env config biar aman</li>
                   </ul>
                 </div>
-
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {profile.stats.map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-2xl border border-black/10 bg-gradient-to-b from-black/5 to-black/10 p-4
-                             dark:border-white/10 dark:from-white/5 dark:to-white/10"
-                >
-                  <p className="text-xs text-black/50 dark:text-zinc-400">{s.label}</p>
-                  <p className="mt-1 text-lg font-extrabold">{s.value}</p>
-                </div>
+              {profile.stats.map((s, i) => (
+                <StaggerWrap key={s.label} show={true} index={i} step={70}>
+                  <div
+                    className="rounded-2xl border border-black/10 bg-gradient-to-b from-black/5 to-black/10 p-4
+                               dark:border-white/10 dark:from-white/5 dark:to-white/10"
+                  >
+                    <p className="text-xs text-black/50 dark:text-zinc-400">{s.label}</p>
+                    <p className="mt-1 text-lg font-extrabold">{s.value}</p>
+                  </div>
+                </StaggerWrap>
               ))}
             </div>
           </Card>
         </Container>
-      </section>
+      </RevealSection>
 
-      <section id="projects" className="py-10">
+      <RevealSection id="projects" onActive={handleActive} className="py-10">
         <Container>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <SectionTitle kicker="WORK" title="Featured Projects" desc="Project yang saya buat." />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {projects.map((p) => (
-              <Card key={p.title} className="overflow-hidden p-0">
-                <div className="relative h-40 w-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/10 dark:to-white/5">
-                  {p.cover ? <Image src={p.cover} alt={p.title} fill className="object-cover" /> : null}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.45),transparent_60%)]" />
-                </div>
-
-                <div className="p-5">
-                  <p className="text-sm font-semibold">{p.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-black/60 dark:text-zinc-300">{p.desc}</p>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {p.tags.map((t) => (
-                      <Chip key={t} icon={getIcon(t)}>
-                        {t}
-                      </Chip>
-                    ))}
+          <div
+            ref={(node) => {
+              projectsGrid.ref.current = node as HTMLElement | null;
+            }}
+            className="grid grid-cols-1 gap-4 md:grid-cols-3"
+          >
+            {projects.map((p, i) => (
+              <StaggerWrap key={p.title} show={projectsGrid.inView} index={i} step={110}>
+                <Card className="overflow-hidden p-0">
+                  <div className="relative h-40 w-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/10 dark:to-white/5">
+                    {p.cover ? <Image src={p.cover} alt={p.title} fill className="object-cover" /> : null}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.45),transparent_60%)]" />
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <a
-                      href={p.link ?? "https://flux-ink-verse.vercel.app/"}
-                      className="text-sm font-semibold text-black hover:opacity-80 dark:text-zinc-100"
-                    >
-                      Live Demo
-                    </a>
-                    <a
-                      href={p.repo ?? "https://github.com/EXN4Z/FluxInk-Verse"}
-                      className="text-sm font-semibold text-black hover:opacity-80 dark:text-zinc-100"
-                    >
-                      Repo
-                    </a>
+                  <div className="p-5">
+                    <p className="text-sm font-semibold">{p.title}</p>
+                    <p className="mt-2 text-sm leading-6 text-black/60 dark:text-zinc-300">{p.desc}</p>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {p.tags.map((t) => (
+                        <Chip key={t} icon={getIcon(t)}>
+                          {t}
+                        </Chip>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between">
+                      <a
+                        href={p.link ?? "https://flux-ink-verse.vercel.app/"}
+                        className="text-sm font-semibold text-black hover:opacity-80 dark:text-zinc-100"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Live Demo
+                      </a>
+                      <a
+                        href={p.repo ?? "https://github.com/EXN4Z/FluxInk-Verse"}
+                        className="text-sm font-semibold text-black hover:opacity-80 dark:text-zinc-100"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Repo
+                      </a>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </StaggerWrap>
             ))}
           </div>
         </Container>
-      </section>
+      </RevealSection>
 
-      <section id="skills" className="py-10">
+      <RevealSection id="skills" onActive={handleActive} className="py-10">
         <Container>
           <SectionTitle
             kicker="STACK"
@@ -509,157 +647,177 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
             align="center"
           />
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {skillGroups.map((g) => (
-              <Card key={g.title} className="p-6">
-                <p className="text-sm font-semibold">{g.title}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {g.items.map((it) => (
-                    <Chip key={it} icon={getIcon(it)}>
-                      {it}
-                    </Chip>
-                  ))}
-                </div>
-              </Card>
+          <div
+            ref={(node) => {
+              skillsGrid.ref.current = node as HTMLElement | null;
+            }}
+            className="grid grid-cols-1 gap-4 md:grid-cols-3"
+          >
+            {skillGroups.map((g, i) => (
+              <StaggerWrap key={g.title} show={skillsGrid.inView} index={i} step={110}>
+                <Card className="p-6">
+                  <p className="text-sm font-semibold">{g.title}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {g.items.map((it) => (
+                      <Chip key={it} icon={getIcon(it)}>
+                        {it}
+                      </Chip>
+                    ))}
+                  </div>
+                </Card>
+              </StaggerWrap>
             ))}
           </div>
         </Container>
-      </section>
+      </RevealSection>
 
-      <section id="experience" className="py-10">
+      <RevealSection id="experience" onActive={handleActive} className="py-10">
         <Container>
           <SectionTitle kicker="CAREER" title="Experience" desc="Pengalaman belajar dan proyek yang pernah saya kerjakan." />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {experiences.map((e) => (
-              <Card key={e.role} className="p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">{e.role}</p>
-                    <p className="mt-1 text-xs text-black/50 dark:text-zinc-400">{e.place}</p>
+
+          <div
+            ref={(node) => {
+              expGrid.ref.current = node as HTMLElement | null;
+            }}
+            className="grid grid-cols-1 gap-4 md:grid-cols-2"
+          >
+            {experiences.map((e, i) => (
+              <StaggerWrap key={e.role} show={expGrid.inView} index={i} step={120}>
+                <Card className="p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">{e.role}</p>
+                      <p className="mt-1 text-xs text-black/50 dark:text-zinc-400">{e.place}</p>
+                    </div>
+                    <span
+                      className="rounded-full border border-black/10 bg-gradient-to-b from-black/5 to-black/10 px-3 py-1 text-[11px] font-semibold text-black/60
+                                 dark:border-white/10 dark:from-white/5 dark:to-white/10 dark:text-zinc-300"
+                    >
+                      {e.time}
+                    </span>
                   </div>
-                  <span
-                    className="rounded-full border border-black/10 bg-gradient-to-b from-black/5 to-black/10 px-3 py-1 text-[11px] font-semibold text-black/60
-                               dark:border-white/10 dark:from-white/5 dark:to-white/10 dark:text-zinc-300"
-                  >
-                    {e.time}
-                  </span>
-                </div>
-                <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-black/70 dark:text-zinc-200">
-                  {e.points.map((pt) => (
-                    <li key={pt}>{pt}</li>
-                  ))}
-                </ul>
-              </Card>
+                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-black/70 dark:text-zinc-200">
+                    {e.points.map((pt) => (
+                      <li key={pt}>{pt}</li>
+                    ))}
+                  </ul>
+                </Card>
+              </StaggerWrap>
             ))}
           </div>
         </Container>
-      </section>
+      </RevealSection>
 
-      <section id="contact" className="py-10">
+      <RevealSection id="contact" onActive={handleActive} className="py-10">
         <Container>
           <SectionTitle kicker="CONTACT" title="Get In Touch" desc="Kontak untuk bertanya / menghubungi saya." />
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
-            <Card className="md:col-span-5 p-7">
-              <p className="text-sm font-semibold">Contact Info</p>
 
-              <div className="mt-4 space-y-3 text-sm text-black/70 dark:text-zinc-200">
-                <p className="flex items-center gap-2">
-                  <MdEmail className="h-4 w-4 text-[#EA4335]" />
-                  <span>Email: {profile.email}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <SiWhatsapp className="h-4 w-4 text-[#25D366]" />
-                  <span>WhatsApp: {profile.whatsapp}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <SiGithub className="h-4 w-4 text-[#181717] dark:text-white" />
-                  <span>GitHub: {profile.github}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <SiInstagram className="h-4 w-4 text-[#E1306C]" />
-                  <span>Instagram: {profile.instagram}</span>
-                </p>
-              </div>
+          <div
+            ref={(node) => {
+              contactGrid.ref.current = node as HTMLElement | null;
+            }}
+            className="grid grid-cols-1 gap-6 md:grid-cols-12"
+          >
+            <StaggerWrap show={contactGrid.inView} index={0} className="md:col-span-5">
+              <Card className="p-7">
+                <p className="text-sm font-semibold">Contact Info</p>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Chip icon={getIcon("Email")} href={`mailto:${profile.email}`}>
-                  Email
-                </Chip>
-
-                <Chip icon={getIcon("Git & GitHub")} href={profile.github}>
-                  GitHub
-                </Chip>
-
-                <Chip icon={getIcon("Instagram")} href={profile.instagram}>
-                  Instagram
-                </Chip>
-              </div>
-            
-            </Card>
-
-            <Card className="md:col-span-7 p-7">
-
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold text-black/60 dark:text-zinc-300">Name</label>
-                  <input
-                    name="name"
-                    className="mt-2 w-full rounded-xl border border-black/15 bg-gradient-to-b from-white to-zinc-50 px-4 py-3 text-sm outline-none
-                               dark:border-white/15 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100"
-                    placeholder="Nama kamu"
-                  />
+                <div className="mt-4 space-y-3 text-sm text-black/70 dark:text-zinc-200">
+                  <p className="flex items-center gap-2">
+                    <MdEmail className="h-4 w-4 text-[#EA4335]" />
+                    <span>Email: {profile.email}</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <SiWhatsapp className="h-4 w-4 text-[#25D366]" />
+                    <span>WhatsApp: {profile.whatsapp}</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <SiGithub className="h-4 w-4 text-[#181717] dark:text-white" />
+                    <span>GitHub: {profile.github}</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <SiInstagram className="h-4 w-4 text-[#E1306C]" />
+                    <span>Instagram: {profile.instagram}</span>
+                  </p>
                 </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-black/60 dark:text-zinc-300">Email</label>
-                  <input
-                    name="email"
-                    type="email"
-                    className="mt-2 w-full rounded-xl border border-black/15 bg-gradient-to-b from-white to-zinc-50 px-4 py-3 text-sm outline-none
-                               dark:border-white/15 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100"
-                    placeholder="contoh@gmail.com"
-                  />
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <Chip icon={getIcon("Email")} href={`mailto:${profile.email}`}>
+                    Email
+                  </Chip>
+                  <Chip icon={getIcon("Git & GitHub")} href={profile.github}>
+                    GitHub
+                  </Chip>
+                  <Chip icon={getIcon("Instagram")} href={profile.instagram}>
+                    Instagram
+                  </Chip>
                 </div>
+              </Card>
+            </StaggerWrap>
 
-                <div className="md:col-span-2">
-                  <label className="text-xs font-semibold text-black/60 dark:text-zinc-300">Message</label>
-                  <textarea
-                    name="message"
-                    className="mt-2 h-32 w-full rounded-xl border border-black/15 bg-gradient-to-b from-white to-zinc-50 px-4 py-3 text-sm outline-none
-                               dark:border-white/15 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100"
-                    placeholder="Ajukan pertanyaan atau permintaan..."
-                  />
-                </div>
+            <StaggerWrap show={contactGrid.inView} index={1} className="md:col-span-7" step={140}>
+              <Card className="p-7">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-semibold text-black/60 dark:text-zinc-300">Name</label>
+                    <input
+                      name="name"
+                      className="mt-2 w-full rounded-xl border border-black/15 bg-gradient-to-b from-white to-zinc-50 px-4 py-3 text-sm outline-none
+                                 dark:border-white/15 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100"
+                      placeholder="Nama kamu"
+                    />
+                  </div>
 
-                <div className="md:col-span-2">
-                  {status === "success" && (
-                    <p className="mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200">
-                      Pesan berhasil dikirim, Mohon bersabar menunggu balasan.
-                    </p>
-                  )}
+                  <div>
+                    <label className="text-xs font-semibold text-black/60 dark:text-zinc-300">Email</label>
+                    <input
+                      name="email"
+                      type="email"
+                      className="mt-2 w-full rounded-xl border border-black/15 bg-gradient-to-b from-white to-zinc-50 px-4 py-3 text-sm outline-none
+                                 dark:border-white/15 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100"
+                      placeholder="contoh@gmail.com"
+                    />
+                  </div>
 
-                  {status === "error" && (
-                    <p className="mb-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">
-                      Gagal mengirim pesan. Coba lagi.
-                    </p>
-                  )}
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-semibold text-black/60 dark:text-zinc-300">Message</label>
+                    <textarea
+                      name="message"
+                      className="mt-2 h-32 w-full rounded-xl border border-black/15 bg-gradient-to-b from-white to-zinc-50 px-4 py-3 text-sm outline-none
+                                 dark:border-white/15 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100"
+                      placeholder="Ajukan pertanyaan atau permintaan..."
+                    />
+                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={sending}
-                    className="w-full rounded-xl px-5 py-3 text-sm font-semibold transition-opacity
-                               bg-gradient-to-b from-black to-zinc-800 text-white hover:opacity-90 disabled:opacity-60
-                               dark:from-white dark:to-zinc-200 dark:text-black"
-                  >
-                    {sending ? "Sending..." : "Send Message"}
-                  </button>
-                </div>
-              </form>
+                  <div className="md:col-span-2">
+                    {status === "success" && (
+                      <p className="mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200">
+                        Pesan berhasil dikirim, Mohon bersabar menunggu balasan.
+                      </p>
+                    )}
 
-            </Card>
+                    {status === "error" && (
+                      <p className="mb-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+                        Gagal mengirim pesan. Coba lagi.
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={sending}
+                      className="w-full rounded-xl px-5 py-3 text-sm font-semibold transition-opacity
+                                 bg-gradient-to-b from-black to-zinc-800 text-white hover:opacity-90 disabled:opacity-60
+                                 dark:from-white dark:to-zinc-200 dark:text-black"
+                    >
+                      {sending ? "Sending..." : "Send Message"}
+                    </button>
+                  </div>
+                </form>
+              </Card>
+            </StaggerWrap>
           </div>
         </Container>
-      </section>
+      </RevealSection>
 
       <footer className="mt-10 border-t border-black/10 bg-gradient-to-b from-zinc-200/70 to-zinc-100 py-10 transition-colors dark:border-white/10 dark:from-zinc-950 dark:to-black">
         <Container>
@@ -686,7 +844,6 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
                   Instagram
                 </Chip>
               </div>
-
             </div>
 
             <div className="md:col-span-7 grid grid-cols-2 gap-6 sm:grid-cols-3">
@@ -695,7 +852,7 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
                 <ul className="mt-3 space-y-2 text-sm text-black/60 dark:text-zinc-300">
                   {nav.map((n) => (
                     <li key={n.href}>
-                      <a href={n.href} className="hover:text-black dark:hover:text-white">
+                      <a href={n.href} onClick={(e) => handleNavClick(e, n.href)} className="hover:text-black dark:hover:text-white">
                         {n.label}
                       </a>
                     </li>
