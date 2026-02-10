@@ -16,6 +16,7 @@ import {
   SiPostman,
   SiFigma,
   SiInstagram,
+  SiLaravel,
 } from "react-icons/si";
 import { FaKey, FaServer, FaDatabase, FaCloudUploadAlt } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
@@ -70,6 +71,14 @@ const projects: Project[] = [
     link: "https://flux-ink-verse.vercel.app/",
     repo: "https://github.com/EXN4Z/FluxInk-Verse",
   },
+  {
+    title: "Hotel Booking App",
+    desc: "On Progress",
+    tags: [],
+    cover: "/images/project2.png",
+    link: "",
+    repo: "",
+  },
 ];
 
 const skillGroups: SkillGroup[] = [
@@ -79,11 +88,11 @@ const skillGroups: SkillGroup[] = [
   },
   {
     title: "Backend / Database (Basic)",
-    items: ["Node.js (basic)", "REST API concept", "Supabase (basic)", "Auth (basic)", "PostgreSQL/SQL (basic)"],
+    items: ["Laravel (basic)", "Node.js (basic)", "Supabase (basic)", "PostgreSQL/SQL (basic)"],
   },
   {
     title: "Tools",
-    items: ["Git & GitHub", "VS Code", "Vercel Deploy (basic)", "Postman (basic)", "Figma (basic)"],
+    items: ["Git & GitHub", "VS Code", "Vercel Deploy", "Figma"],
   },
 ];
 
@@ -126,6 +135,7 @@ function getIcon(label: string): React.ReactNode | null {
   if (l.includes("react")) return <SiReact className={cls("text-[#61DAFB]")} />;
   if (l.includes("tailwind")) return <SiTailwindcss className={cls("text-[#38BDF8]")} />;
   if (l.includes("javascript")) return <SiJavascript className={cls("text-[#F7DF1E]")} />;
+  if (l.includes("laravel")) return <SiLaravel className={cls("text-[#FF2D20]")} />;
 
   if (l.includes("node")) return <SiNodedotjs className={cls("text-[#339933]")} />;
   if (l.includes("supabase")) return <SiSupabase className={cls("text-[#3ECF8E]")} />;
@@ -133,12 +143,10 @@ function getIcon(label: string): React.ReactNode | null {
 
   if (l.includes("sql") || l.includes("db")) return <FaDatabase className={cls("text-[#8B5CF6]")} />;
   if (l.includes("api")) return <FaServer className={cls("text-[#60A5FA]")} />;
-  if (l.includes("auth")) return <FaKey className={cls("text-[#F59E0B]")} />;
   if (l.includes("storage") || l.includes("upload")) return <FaCloudUploadAlt className={cls("text-[#22C55E]")} />;
 
   if (l.includes("git")) return <SiGithub className={cls("text-[#181717] dark:text-white")} />;
   if (l.includes("vercel")) return <SiVercel className={cls("text-black dark:text-white")} />;
-  if (l.includes("postman")) return <SiPostman className={cls("text-[#FF6C37]")} />;
   if (l.includes("figma")) return <SiFigma className={cls("text-[#A259FF]")} />;
 
   if (l.includes("instagram")) return <SiInstagram className={cls("text-[#E1306C]")} />;
@@ -399,7 +407,7 @@ export default function Page() {
               </div>
             </div>
 
-            <nav className="hidden md:flex ml-80 gap-6 text-sm text-black/70 dark:text-zinc-300">
+            <nav className="hidden md:flex ml-60 gap-6 text-sm text-black/70 dark:text-zinc-300">
               {nav.map((n) => {
                 const isActive = active === n.href;
                 return (
@@ -427,14 +435,13 @@ export default function Page() {
 
             <div className="flex items-center gap-2">
               <a
-                href="#contact"
-                onClick={(e) => handleNavClick(e, "#contact")}
+                href=""
                 className="rounded-xl border px-4 py-2 text-sm font-semibold transition-colors
                            border-black/15 bg-gradient-to-b from-white to-zinc-100 text-black hover:from-black hover:to-black hover:text-white
                            dark:border-white/15 dark:bg-gradient-to-b dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-100
                            dark:hover:from-white dark:hover:to-white dark:hover:text-black"
               >
-                Contact
+                Open For Internship
               </a>
             </div>
           </div>
@@ -485,7 +492,7 @@ export default function Page() {
                     className="absolute bottom-5 left-5 rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-xs text-zinc-100 backdrop-blur
                                dark:border-white/10 dark:bg-white/10 dark:text-zinc-100"
                   >
-                    <p className="font-semibold">Availab le</p>
+                    <p className="font-semibold">Avaible</p>
                     <p>{profile.status}</p>
                   </div>
                 </div>
